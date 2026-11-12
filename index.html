@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Site 17 · River Habitat Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><style>
+  :root{
+    --bg:#02070e; --panel:#060f18; --cyan:#66ccff; --dim:#5f7d99;
+    --text:#cceeff; --amber:#ffb000; --red:#ff5b6e; --green:#00e5a0;
+    --line:rgba(102,204,255,0.18);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    font-size:12px; line-height:1.5;
+    display:grid; grid-template-rows:auto 1fr auto;
+    grid-template-columns:300px 1fr;
+    grid-template-areas:"head head" "side map" "foot foot";
+  }
+  header{grid-area:head;display:flex;align-items:baseline;gap:14px;
+    padding:10px 16px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  header h1{font-size:13px;margin:0;letter-spacing:.14em;text-transform:uppercase;color:var(--cyan);font-weight:600}
+  header .sub{color:var(--dim);font-size:11px}
+  header .spacer{flex:1}
+  header .stamp{color:var(--dim);font-size:11px}
+  #side{grid-area:side;border-right:1px solid var(--line);overflow-y:auto;padding:10px}
+  #map{grid-area:map;background:#000}
+  footer{grid-area:foot;border-top:1px solid var(--line);padding:7px 16px;
+    color:var(--dim);font-size:11px;display:flex;gap:18px;flex-wrap:wrap}
+  .panel{border:1px solid var(--line);border-radius:5px;background:var(--panel);padding:9px 10px;margin-bottom:10px}
+  .panel h2{font-size:10px;margin:0 0 7px;letter-spacing:.13em;text-transform:uppercase;color:var(--cyan);font-weight:600}
+  .row{display:flex;justify-content:space-between;gap:8px;padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+  .row:last-child{border-bottom:none}
+  .row .k{color:var(--dim)}
+  .row .v{color:var(--text);font-weight:600;text-align:right}
+  .tier{display:inline-block;font-size:9px;padding:0 5px;border-radius:3px;
+    border:1px solid currentColor;letter-spacing:.06em;vertical-align:1px;margin-left:5px}
+  .t1{color:var(--green)} .t2{color:var(--cyan)} .t3{color:var(--amber)}
+  .t4{color:#b98cff} .t5{color:var(--red)}
+  .gap{background:rgba(255,93,110,.08);border-color:rgba(255,93,110,.4)}
+  .gap .v{color:var(--red)}
+  .note{color:var(--dim);font-size:10.5px;margin-top:6px;line-height:1.45}
+  label.tog{display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;color:var(--dim)}
+  label.tog.on{color:var(--text)}
+  input[type=checkbox]{accent-color:#66ccff;width:12px;height:12px;cursor:pointer}
+  .leaflet-container{background:#02070e}
+  .leaflet-tooltip{background:rgba(2,7,14,.94)!important;border:1px solid var(--line)!important;
+    color:var(--text)!important;font-family:inherit;font-size:11px;border-radius:4px}
+  @media(max-width:760px){
+    body{grid-template-columns:1fr;grid-template-areas:"head" "map" "side" "foot";
+      grid-template-rows:auto 46vh auto auto;height:auto;overflow-y:auto}
+    #side{border-right:none;border-top:1px solid var(--line)}
+  }
+</style></head><body>
+<header>
+<h1>Site 17 · River Habitat Dashboard</h1>
+<span class="sub" id="hd-sub">site 07 · gauge: Tennessee River at Knoxville</span>
+<span class="spacer"></span>
+<span class="stamp" id="hd-stamp">pulled 10:38 PM</span>
+</header>
+<div id="side"><section style="padding:14px 18px;border:1px solid #607080;border-radius:8px;margin:12px 0;background:#17222a;color:#eaf0ef;font:14px system-ui;"><strong>Site 17 · Habitat interpretation workspace</strong><p style="margin:8px 0">Use the aerial to trace a shoreline segment yourself. The line is your interpretation, not an automated dataset. Save the GeoJSON and place it in <code>data/</code> before publishing.</p><label><input id="ly-aerial" type="checkbox"/> Show aerial imagery (Esri)</label><p style="margin:8px 0;color:#ffcb78">Saved shoreline: 50 traced points · orange line on map (loads when hosted).</p><div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap"><button id="trace-start" type="button">Trace shoreline on map</button><button id="trace-undo" type="button">Undo point</button><button id="trace-save" type="button">Download my GeoJSON</button><span id="trace-count">0 vertices</span></div><p style="font-size:12px;margin-top:8px">For this assignment, also add and document an NLCD land-cover layer from the course data sources page. Aerial imagery alone does not fulfill that additional data-source requirement.</p></section>
+<div class="panel">
+<h2>Question</h2>
+<div class="note" id="q-text" style="color:var(--ink);font-size:13px">your one question from step 1</div>
+<div class="note" id="q-wrong">Wrong if: the measurement that would prove you wrong</div>
+</div>
+<div class="panel">
+<h2>Instruments</h2>
+<div id="instruments"><div class="note">Loading live observations…</div></div>
+<div class="note">Each reading shows the tier of the source that produced it. Tier 1 is measured by an accountable agency. Tier 2 is modeled. Tier 3 is volunteered.</div>
+</div>
+<div class="panel gap">
+<h2>Measured against modeled</h2>
+<div id="compare"><div class="note">Loading live gauge and model…</div></div>
+<div class="note" id="compare-note">Awaiting live measured and modeled values; differences may reflect timing, dam releases, or model grid placement.</div>
+</div>
+<div class="panel">
+<h2>Layers</h2>
+<label class="tog on"><input checked="" id="ly-species" type="checkbox"/> species observations <span class="tier t3">3</span></label>
+<label class="tog on"><input checked="" id="ly-gauge" type="checkbox"/> river gauge <span class="tier t1">1</span></label>
+<label class="tog" id="nlcd-toggle"><input id="ly-nlcd" type="checkbox"/> NLCD 2021 land cover <span class="tier t2">2</span></label>
+<label class="tog on" id="shoreline-toggle"><input checked id="ly-shoreline" type="checkbox"/> my shoreline trace <span class="tier t3">mine</span></label>
+<div class="note" id="nlcd-status">NLCD is a 2021 modeled classification (30 m pixels), not a live wildlife count. Turn on to compare developed land, forest and water.</div>
+<div class="note" style="line-height:1.6"><b>NLCD key:</b> <span style="color:#466b9f">■</span> water &nbsp; <span style="color:#d99282">■</span> developed &nbsp; <span style="color:#68ab5f">■</span> forest &nbsp; <span style="color:#b8d9eb">■</span> wetlands. Colors approximate the NLCD palette.</div>
+</div>
+<div class="panel">
+<h2>Your quad</h2>
+<div class="row"><span class="k">site</span><span class="v" id="q-site">site-07</span></div>
+<div class="row"><span class="k">center</span><span class="v" id="q-c">35.8969, -83.9601</span></div>
+<div class="row"><span class="k">data pulled</span><span class="v" id="q-t">Nov 11, 10:38 PM</span></div>
+</div>
+</div>
+<div id="map"></div>
+<footer>
+<span id="ft-src">sources · NOAA NWPS, Open-Meteo, iNaturalist, MRLC NLCD 2021, Esri · aerial imagery date unverified</span>
+<span class="spacer"></span>
+<span>Prompting Impact · Module D · UT Knoxville</span>
+</footer>
+<script>
+// ============================================================
+// CONFIGURE THIS BLOCK — this is the only part you must edit
+// ============================================================
+// Every value here comes from your KML (site-NN-your-name.kml, in Session 2) or from
+// your aerial. Have the model fill it in from the file. Do not type coordinates.
+// The values below are site 7's, as an example, so the page runs before you edit it.
+const SITE = {
+  number: 17,
+  lat: 35.84542084003589, lng: -84.12868366476822,
+  corners: [[35.83447048453559, -84.10790945351319], [35.865462711240845, -84.13034102880549], [35.85637119553619, -84.14945787602325], [35.82537896883094, -84.12702630073095]],
+  channel: [35.84542084003589, -84.12868366476822], // provisional center probe; verify a point on the river using aerial
+  zoom: 13,
+  question: "How are waterfowl, animals, and other life forms impacted as development spreads or remains limited throughout the site?",
+  wrongIf: "Wildlife observations and habitat indicators show no consistent difference between developed and less-developed areas.",
+  gauge: "knot1"
+};
+
+// ============================================================
+// No edits needed below unless you are adding a layer
+// ============================================================
+const map = L.map('map', {zoomControl:true}).setView([SITE.lat, SITE.lng], SITE.zoom);
+L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+  {attribution:'Powered by Esri', maxZoom:16}).addTo(map);
+L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+  {maxZoom:16}).addTo(map);
+
+// your quad, drawn from its four corners. It is rotated to follow the river.
+L.polygon(SITE.corners,{color:'#66ccff',weight:1.5,dashArray:'4 6',fill:false}).addTo(map);
+function inQuad(lat, lng){            // true when a point falls inside your four corners
+  let ins = false; const c = SITE.corners;
+  for (let i = 0, j = c.length - 1; i < c.length; j = i++){
+    const [yi, xi] = c[i], [yj, xj] = c[j];
+    if ((yi > lat) != (yj > lat) && lng < (xj - xi) * (lat - yi) / (yj - yi) + xi) ins = !ins;
+  }
+  return ins;
+}
+const box = { south: Math.min(...SITE.corners.map(c=>c[0])), north: Math.max(...SITE.corners.map(c=>c[0])),
+              west:  Math.min(...SITE.corners.map(c=>c[1])), east:  Math.max(...SITE.corners.map(c=>c[1])) };
+// A note if you add a chart: style it by id (#profile { ... }), never with a bare svg { ... } rule.
+// Leaflet draws your quad and every dot inside an svg too, and a bare rule can make them vanish with no error.
+
+const $ = id => document.getElementById(id);
+$('q-text').textContent = SITE.question;
+$('q-wrong').textContent = 'Wrong if: ' + SITE.wrongIf;
+$('q-site').textContent = SITE.number ? ('site-' + String(SITE.number).padStart(2,'0')) : 'unset';
+$('q-c').textContent = SITE.lat.toFixed(4) + ', ' + SITE.lng.toFixed(4);
+
+const pulled = new Date();
+$('q-t').textContent = pulled.toLocaleString('en-US',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+$('hd-stamp').textContent = 'pulled ' + pulled.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+
+function addRow(host, key, val, tier){
+  const d = document.createElement('div');
+  d.className = 'row';
+  d.innerHTML = '<span class="k">' + key + '</span><span class="v">' + val +
+                (tier ? '<span class="tier t'+tier+'">'+tier+'</span>' : '') + '</span>';
+  $(host).appendChild(d);
+  return d;
+}
+
+// clear the placeholder row on first write
+let cleared = false;
+function clearPlaceholder(host){
+  if(cleared) return; cleared = true;
+  $(host).innerHTML = '';
+}
+
+// --- river gauge (Tier 1) --------------------------------
+let measuredM3s = null;
+fetch('https://api.water.noaa.gov/nwps/v1/gauges/' + SITE.gauge)
+  .then(r => r.json())
+  .then(d => {
+    clearPlaceholder('instruments');
+    const o = d.status.observed, f = d.status.forecast;
+    const kcfs = parseFloat(o.secondary);
+    if (!isNaN(kcfs)) measuredM3s = kcfs * 1000 * 0.0283168;
+    addRow('instruments','stage', o.primary + ' ' + o.primaryUnit, 1);
+    addRow('instruments','discharge', o.secondary + ' ' + o.secondaryUnit, 1);
+    if (f) addRow('instruments','forecast', f.primary + ' ' + f.primaryUnit, 1);
+    $('hd-sub').textContent = 'site ' + String(SITE.number).padStart(2,'0') + ' · gauge: ' + d.name;
+    L.circleMarker([d.latitude, d.longitude], {radius:6,color:'#66ccff',fillColor:'#66ccff',fillOpacity:.9})
+      .addTo(gaugeLayer).bindTooltip(d.name + ' · ' + o.primary + ' ' + o.primaryUnit);
+    renderCompare();
+  })
+  .catch(() => { clearPlaceholder('instruments'); addRow('instruments','gauge','unavailable',null); });
+
+// --- modeled discharge (Tier 2) -------------------------
+// The model works on a grid of cells about 5 km across, and its river can sit a whole cell away from
+// the real one. So it is asked at six points, and the page keeps the cell carrying the most water,
+// which is the cell the model thinks the main river runs through. The others are listed in the console.
+let modeledM3s = null, modelCell = null;
+const probes = [SITE.channel, [SITE.lat, SITE.lng], ...SITE.corners];
+Promise.all(probes.map(p => fetch('https://flood-api.open-meteo.com/v1/flood?latitude=' + p[0] + '&longitude=' + p[1] +
+      '&daily=river_discharge&forecast_days=1').then(r => r.json()).catch(() => null)))
+  .then(rs => {
+    const cells = rs.filter(d => d && d.daily).map(d => ({q: d.daily.river_discharge[0], cell: [d.latitude, d.longitude]}));
+    console.table(cells.map(c => ({m3s: c.q, cell: c.cell.map(v => v.toFixed(3)).join(', ')})));
+    if (!cells.length) { document.getElementById("compare-note").textContent = "Flood model unavailable; retry later."; return; }
+    const best = cells.reduce((a, b) => (b.q > a.q ? b : a));
+    modeledM3s = best.q;
+    modelCell = best.cell;                   // the cell the model answered for, about 5 km across
+    L.circleMarker(modelCell,{radius:5,color:'#ffb000',fill:false,weight:2})
+      .addTo(map).bindTooltip('flood model cell center, about 5 km across (not your quad)');
+    renderCompare();
+  });
+
+function renderCompare(){
+  if (measuredM3s == null || modeledM3s == null) return;
+  const host = 'compare';
+  const ratio = measuredM3s / modeledM3s;
+  $('compare').innerHTML = '';
+  addRow(host,'measured', Math.round(measuredM3s).toLocaleString() + ' m³/s', 1);
+  addRow(host,'modeled',  Math.round(modeledM3s).toLocaleString()  + ' m³/s', 2);
+  const r = addRow(host,'ratio', ratio.toFixed(1) + '×', null);
+  r.querySelector('.v').style.color = '#ffb000';   // a reading to hold, not a pass or a fail
+  addRow(host,'model cell', modelCell.map(v => v.toFixed(3)).join(', '), null);
+  $('compare-note').textContent =
+    'The gauge, one point in the water, and the model, one 5 km cell, disagree by ' + ratio.toFixed(1) +
+    '×. Keep both. More than one reading fits: dam releases the model cannot know, a cell that resolves a different stretch of river, a daily value against a reading every few minutes. Say what the gap suggests and what would test it.';
+}
+
+// --- weather + air quality (Tier 2) ---------------------
+fetch('https://api.open-meteo.com/v1/forecast?latitude=' + SITE.lat + '&longitude=' + SITE.lng +
+      '&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph')
+  .then(r => r.json()).then(d => {
+    clearPlaceholder('instruments');
+    addRow('instruments','air temp', d.current.temperature_2m + ' °F', 2);
+    addRow('instruments','wind', d.current.wind_speed_10m + ' mph', 2);
+  }).catch(()=>{});
+
+fetch('https://air-quality-api.open-meteo.com/v1/air-quality?latitude=' + SITE.lat + '&longitude=' + SITE.lng +
+      '&current=pm2_5,us_aqi')
+  .then(r => r.json()).then(d => {
+    addRow('instruments','PM2.5', d.current.pm2_5 + ' µg/m³', 2);
+    addRow('instruments','US AQI', d.current.us_aqi, 2);
+  }).catch(()=>{});
+
+// --- species (Tier 3) -----------------------------------
+const speciesLayer = L.layerGroup().addTo(map);
+let speciesCount = 0;
+// queried by your bounding box, then clipped to your four corners. A radius reaches far past your quad.
+fetch('https://api.inaturalist.org/v1/observations?swlat=' + box.south + '&swlng=' + box.west +
+      '&nelat=' + box.north + '&nelng=' + box.east + '&per_page=200&order=desc&order_by=observed_on')
+  .then(r => r.json()).then(d => {
+    (d.results||[]).forEach(o => {
+      if(!o.geojson || !o.geojson.coordinates) return;
+      const [lng,lat] = o.geojson.coordinates;
+      if(!inQuad(lat,lng)) return;
+      const t = (o.taxon && (o.taxon.preferred_common_name || o.taxon.name)) || 'unknown';
+      L.circleMarker([lat,lng],{radius:3,color:'#00e5a0',fillColor:'#00e5a0',fillOpacity:.75})
+        .addTo(speciesLayer).bindTooltip(t + (o.observed_on ? ' · ' + o.observed_on : ''));
+      speciesCount++;
+    });
+    addRow('instruments','species logged', speciesCount + ' inside your quad, of the latest 200 in its box', 3);
+  }).catch(()=>{});
+
+// --- toggles --------------------------------------------
+const gaugeLayer = L.layerGroup().addTo(map);
+function wire(id, layer){
+  const el = $(id);
+  el.addEventListener('change', () => {
+    el.closest('label').classList.toggle('on', el.checked);
+  });
+}
+wire('ly-species', speciesLayer);
+document.getElementById('ly-species').addEventListener('change', e => {
+  e.target.checked ? map.addLayer(speciesLayer) : map.removeLayer(speciesLayer);
+});
+document.getElementById('ly-gauge').addEventListener('change', e => {
+  e.target.checked ? map.addLayer(gaugeLayer) : map.removeLayer(gaugeLayer);
+  e.target.closest('label').classList.toggle('on', e.target.checked);
+});
+
+
+// Student-created shoreline from the submitted GeoJSON file.
+const submittedShoreline = L.layerGroup().addTo(map);
+fetch('data/site-17-shoreline-trace.geojson').then(r=>{if(!r.ok)throw Error('Missing shoreline file');return r.json()})
+ .then(data=>L.geoJSON(data,{style:{color:'#ffb84d',weight:4,opacity:0.95},
+   onEachFeature:(feature,layer)=>layer.bindPopup('Student-traced shoreline · Esri aerial interpretation · imagery date unverified')}).addTo(submittedShoreline))
+ .catch(e=>console.warn('Student shoreline could not load:',e));
+// Additional course data layer: NLCD 2021, served live as MRLC OGC WMS.
+// WMS images are requested at viewing time; do not claim a local raster was downloaded.
+const nlcd2021 = L.tileLayer.wms('https://www.mrlc.gov/geoserver/mrlc_display/NLCD_2021_Land_Cover_L48/wms', {
+  layers:'NLCD_2021_Land_Cover_L48', format:'image/png', transparent:true,
+  version:'1.1.1', opacity:0.67, attribution:'MRLC / USGS · NLCD 2021 · 30 m modeled land cover'
+});
+const nlcdInput = document.getElementById('ly-nlcd');
+nlcdInput.addEventListener('change', e => {
+  if(e.target.checked){ nlcd2021.addTo(map); nlcd2021.bringToBack(); }
+  else map.removeLayer(nlcd2021);
+  e.target.closest('label').classList.toggle('on',e.target.checked);
+  document.getElementById('nlcd-status').textContent=e.target.checked
+    ? 'NLCD 2021 requested from MRLC WMS. If no colors appear, the remote service may be unavailable; this is not a locally stored raster.'
+    : 'NLCD 2021 is a 30 m modeled land-cover classification; toggle it on to compare habitat and development.';
+});
+nlcd2021.on('tileerror',()=>{document.getElementById('nlcd-status').textContent='MRLC map tile failed to load. The remote WMS may be unavailable; try again later.';});
+document.getElementById('ly-shoreline').addEventListener('change',e=>{
+ e.target.checked ? map.addLayer(submittedShoreline) : map.removeLayer(submittedShoreline);
+ e.target.closest('label').classList.toggle('on',e.target.checked);
+});
+// USER-DRAWN shoreline/habitat interpretation. This is NOT generated evidence.
+const drawnPoints=[];const drawnLayer=L.polyline([],{color:'#ffcc70',weight:4}).addTo(map);
+let drawing=false;
+map.on('click', e=>{if(!drawing || !inQuad(e.latlng.lat,e.latlng.lng))return;drawnPoints.push([e.latlng.lng,e.latlng.lat]);drawnLayer.setLatLngs(drawnPoints.map(p=>[p[1],p[0]]));document.getElementById('trace-count').textContent=drawnPoints.length+' vertices';});
+document.getElementById('trace-start').onclick=()=>{drawing=!drawing;document.getElementById('trace-start').textContent=drawing?'Stop tracing':'Trace shoreline on map';};
+document.getElementById('trace-undo').onclick=()=>{drawnPoints.pop();drawnLayer.setLatLngs(drawnPoints.map(p=>[p[1],p[0]]));document.getElementById('trace-count').textContent=drawnPoints.length+' vertices';};
+document.getElementById('trace-save').onclick=()=>{if(drawnPoints.length<2){alert('Trace at least two points first.');return;}const geo={type:'FeatureCollection',features:[{type:'Feature',properties:{name:'Site 17 shoreline interpretation',method:'Hand-traced from Esri World Imagery aerial basemap',imagery_date:'not verified; check imagery metadata',observer:'student'},geometry:{type:'LineString',coordinates:drawnPoints}}]};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(geo,null,2)],{type:'application/geo+json'}));a.download='site-17-shoreline-trace.geojson';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);};
+// Optional imagery to help compare developed and vegetated banks; imagery is not a classified NLCD layer.
+const aerial=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:18,attribution:'Esri World Imagery'});
+document.getElementById('ly-aerial').onchange=e=>{e.target.checked?map.addLayer(aerial):map.removeLayer(aerial);};
+</script>
+</body></html>

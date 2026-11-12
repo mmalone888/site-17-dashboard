@@ -1,0 +1,72 @@
+{
+  "site": 17,
+  "name": "Madeline Malone",
+  "hosted_url": "https://musical-treacle-a5e44a.netlify.app/",
+  "center": [
+    -84.12868366476822,
+    35.84542084003589
+  ],
+  "corners": [
+    [
+      -84.10790945351319,
+      35.83447048453559
+    ],
+    [
+      -84.13034102880549,
+      35.865462711240845
+    ],
+    [
+      -84.14945787602325,
+      35.85637119553619
+    ],
+    [
+      -84.12702630073095,
+      35.82537896883094
+    ]
+  ],
+  "bounds": [
+    [
+      -84.14945787602325,
+      35.82537896883094
+    ],
+    [
+      -84.10790945351319,
+      35.865462711240845
+    ]
+  ],
+  "pulled": null,
+  "one_question": "How are waterfowl, animals, and other life forms impacted as development spreads or remains limited throughout the site?",
+  "layers": [
+    {
+      "name": "NOAA river stage and discharge",
+      "kind": "measured",
+      "source": "NOAA NWPS gauge knot1; live browser request"
+    },
+    {
+      "name": "Open-Meteo flood discharge",
+      "kind": "modeled",
+      "source": "Open-Meteo Flood API; live browser request"
+    },
+    {
+      "name": "weather and air quality",
+      "kind": "modeled",
+      "source": "Open-Meteo forecast and air quality APIs; live browser requests"
+    },
+    {
+      "name": "species observations",
+      "kind": "observed",
+      "source": "iNaturalist API; latest 200 in bounding box, filtered to quad in browser"
+    },
+    {
+      "name": "NLCD 2021 land cover",
+      "kind": "modeled",
+      "source": "MRLC / USGS NLCD 2021 WMS; remotely rendered, not downloaded"
+    },
+    {
+      "name": "shoreline interpretation",
+      "kind": "mine",
+      "source": "Student traced from Esri World Imagery; imagery acquisition date unverified",
+      "file": "data/site-17-shoreline-trace.geojson"
+    }
+  ]
+}

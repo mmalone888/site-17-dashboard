@@ -1,0 +1,40 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "site": 17,
+        "source": "Site 17 KML provided by student",
+        "feature": "assigned study boundary"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -84.10790945351319,
+              35.83447048453559
+            ],
+            [
+              -84.13034102880549,
+              35.865462711240845
+            ],
+            [
+              -84.14945787602325,
+              35.85637119553619
+            ],
+            [
+              -84.12702630073095,
+              35.82537896883094
+            ],
+            [
+              -84.10790945351319,
+              35.83447048453559
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}
